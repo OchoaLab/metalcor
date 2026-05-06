@@ -4,3 +4,4 @@
 ^unpub$
 ^cran-comments\.md$
 ^logo
+^.github$
