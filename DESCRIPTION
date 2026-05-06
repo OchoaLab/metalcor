@@ -1,6 +1,6 @@
 Package: metalcor
 Title: Meta-Analysis of Correlated Genetic Association Studies
-Version: 0.0.1.9000
+Version: 1.0.0
 Authors@R: c(
     person(given = "Alejandro",
 	   family = "Ochoa",

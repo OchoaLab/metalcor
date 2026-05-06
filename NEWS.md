@@ -6,3 +6,9 @@
 
 - Function `pprodcor` corrected low accuracy of calculations for `abs(rho)` values between 0.95 and 1, which gets particularly worse as 1 is approached, and caused large errors at 0.999, for example.  Correction solves problems upstream, in `qprodcor` and `rho_from_median`.
 - Added vignette
+
+# metalcor 1.0.0 (2026-05-06)
+
+- CRAN submission
+  - Minor spellcheck edits
+- Added logo, displayed on readme

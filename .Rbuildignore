@@ -2,3 +2,5 @@
 ^doc$
 ^Meta$
 ^unpub$
+^cran-comments\.md$
+^logo

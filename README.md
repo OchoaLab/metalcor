@@ -1,4 +1,4 @@
-# metalcor
+# metalcor <img src="man/figures/logo.png" alt="metalcor" align="right" />
 
 `metalcor` generalizes the genetic association study meta-analysis software METAL to model studies with correlated statistics, which arise due to cryptic relatedness between studies.
 

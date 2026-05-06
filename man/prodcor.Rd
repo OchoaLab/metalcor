@@ -36,7 +36,7 @@ Density, cumulative, quantile, and random generation for the product of two corr
 }
 \details{
 \code{pprodcor} does not have a closed form, so it is calculated by numerical integration of \code{dprodcor}.
-Furthermore, \code{dprodcor(0)} is infinite, so in order for numerical integration to succeed, we exclude the window \code{c(-eps, eps)} for arguments near zero.  \code{eps} is the initial value, but if failure is still encountered, \code{eps} is incremented by factors of 10 untill successful.  (For positive arguments integration from above is used instead, subtracted from 1.)
+Furthermore, \code{dprodcor(0)} is infinite, so in order for numerical integration to succeed, we exclude the window \code{c(-eps, eps)} for arguments near zero.  \code{eps} is the initial value, but if failure is still encountered, \code{eps} is incremented by factors of 10 until successful.  (For positive arguments integration from above is used instead, subtracted from 1.)
 \code{qprodcor} also does not have a closed form, so it is calculated using a root finder on \code{pprodcor}, which makes it very slow.
 }
 \examples{
@@ -51,7 +51,7 @@ rprodcor( n, rho )
 
 }
 \references{
-Nadarajah, Saralees, and Tibor K. Pogány. “On the Distribution of the Product of Correlated Normal Random Variables.” Comptes Rendus Mathematique 354, no. 2 (2016): 201–4. https://doi.org/10.1016/j.crma.2015.10.019.
+Nadarajah, Saralees, and Tibor K. Pogány. “On the Distribution of the Product of Correlated Normal Random Variables.” Comptes Rendus Mathematique 354, no. 2 (2016): 201–4. \doi{10.1016/j.crma.2015.10.019}.
 
-Gaunt, Robert E. “The Basic Distributional Theory for the Product of Zero Mean Correlated Normal Random Variables.” Statistica Neerlandica 76, no. 4 (2022): 450–70. https://doi.org/10.1111/stan.12267.
+Gaunt, Robert E. “The Basic Distributional Theory for the Product of Zero Mean Correlated Normal Random Variables.” Statistica Neerlandica 76, no. 4 (2022): 450–70. \doi{10.1111/stan.12267}.
 }
