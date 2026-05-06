@@ -1,6 +1,6 @@
 Package: metalcor
 Title: Meta-Analysis of Correlated Genetic Association Studies
-Version: 0.0.0.9000
+Version: 0.0.1.9000
 Authors@R: c(
     person(given = "Alejandro",
 	   family = "Ochoa",
@@ -19,6 +19,8 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Imports:
     stats,
@@ -26,3 +28,6 @@ Imports:
     tibble,
     tidyselect
 Config/testthat/edition: 3
+VignetteBuilder: knitr
+URL: https://github.com/OchoaLab/metalcor
+BugReports: https://github.com/OchoaLab/metalcor/issues

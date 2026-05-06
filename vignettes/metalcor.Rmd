@@ -1,0 +1,227 @@
+---
+title: "metalcor"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{metalcor}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+                      collapse = TRUE,
+                      comment = "#>",
+                      fig.width = 6, fig.height = 4, out.width = "100%"
+                  )
+```
+
+This packages makes it easy to meta-analyze multiple genetic association studies that may be correlated, which we established occurs when there is cryptic relatedness between the studies, though it could also happen due to other forms of confounding.
+The standard method for genetic association meta analysis, METAL, assumes that the studies are independent, so when they are not this results in inflated statistics in the meta-analyzed output, even when input studies are well calibrated.
+
+At the end we present important distributional modeling of products of correlated standard normal variables, which enables estimation of correlations from median estimates in this setting where large outliers are expected.
+
+
+## Simulate correlated studies for test
+
+(For real data you don't have to do this, instead `study1`, `study2`, etc would be data you already have).
+
+Let's start by simulating a big enough example with three studies and 10K loci.
+This simulation will have correlated statistics, but it won't have any real associations or LD, so in that sense it is simplistic and does not feature some other challenging features of real data, but it does have correlated statistics and we can demonstrate that they are handled well and that the correlation structure is well estimated.
+```{r}
+# number of studies
+S <- 3
+# number of loci
+m <- 10000
+# this is the true covariance matrix of this simulation
+R <- matrix(
+    c( 1.0, 0.2, 0.0,
+      0.2, 1.0, 0.1,
+      0.0, 0.1, 1.0 ),
+    nrow = 3, ncol = 3
+)
+
+# simulate the correlated Z scores first
+# use Cholesky decomposition to simulate via affine transform
+L <- chol( R )
+Z <- matrix( rnorm( m * 3 ), nrow = m, ncol = 3 ) %*% L
+
+# construct some trivial study summary statistics with the above Z scores
+library(tibble)
+library(dplyr)
+study1 <- tibble(
+    id = 1 : m,
+    chr = ceiling( id / m * 10 ),
+    pos = id,
+    n = 1000,
+    z = Z[, 1],
+    se = runif( m, 0, 1 / sqrt( n ) ),
+    beta = z * se
+)
+# this copies id/chr/pos between studies, adds study-specific info.
+# note that, besides the different Z scores, there's also different sample sizes per study,
+# and standard errors scale inversely proportional to the square root of study size
+study2 <- study1 %>%
+    select( id, chr, pos) %>%
+    mutate(
+        n = 2000,
+        z = Z[, 2],
+        se = runif( m, 0, 1 / sqrt( n ) ),
+        beta = z * se
+    )
+study3 <- study1 %>%
+    select( id, chr, pos) %>%
+    mutate(
+        n = 10000,
+        z = Z[, 3],
+        se = runif( m, 0, 1 / sqrt( n ) ),
+        beta = z * se
+    )
+# for realism, randomly subset studies so only 90% of loci survive, different sets per study
+study1 <- study1[ sort( sample.int( m, m * 0.9) ), ]
+study2 <- study2[ sort( sample.int( m, m * 0.9) ), ]
+study3 <- study3[ sort( sample.int( m, m * 0.9) ), ]
+```
+Above, the tables contain z-scores, because we constructed them first and `beta` and `se` are derived, but `beta` and `se` are mandatory columns, as are the rest of the columns in the above example except for `z`, which are always recalculated as `beta/se` by `metalcor`.
+
+## Perform meta-analysis
+
+Now we perform the meta-analysis!  Once your studies are loaded onto data frames or tibbles, the process is quite simple.
+```{r}
+library(metalcor)
+
+# gather studies into a list
+studies <- list( study1, study2, study3 )
+# pass to metalcor!
+out <- metalcor( studies )
+# you can quickly inspect the return value, it is a list with two named elements:
+# - assoc: the meta-analyzed association table
+# - R: the estimated covariance matrix between studies
+out
+```
+There are several things to note.
+First, the meta-analyzed table has every locus observed in at least one study (the number of studies for each locus is in the column `n_studies`; there's only a few loci that were removed in all three studies).
+These loci are automatically sorted by `chr` and `pos` (that is their only use here; loci were matched by `id`).
+For loci observed in a single study, meta-analysis is just a copy of the input data.
+Lastly, note that the estimated R matrix is close to the true matrix of the simulation (in the previous section).
+If the input studies had been inflated, their diagonal values would exceed 1, and in fact they ought to equal their inflation factors (in these cases, the R matrix is no longer a correlation matrix technically, but a covariance matrix).
+
+For most users, that's it!
+The meta-analyzed association table is the primary output.
+However, since correlation between studies has not been studied before our work, it is important to report the estimated R matrix to determine which studies are not independent, and perhaps try to determine what causes dependence between studies more broadly.
+
+Let's also demonstrate quickly that, despite the relative high correlations between these studies, the resulting meta-analysis is not inflated.
+The following value is close to 1 ideally, and exceeds 1 under inflation/confounding:
+```{r}
+mean( out$assoc$z^2 )
+```
+
+## Only estimating study covariance
+
+If for whatever reason you want to skip the meta-analysis and only study the correlation structure, you can do that!
+With the starting Z-score matrix we simulated earlier, you can skip to the covariance estimate directly using the function below.
+Both `estimate_R` and `admixcor` above have a parameter `median`, which if `FALSE` uses a mean-based estimator.
+Compare those two estimates here, as well as the most naive estimate:
+```{r}
+# default median estimate
+estimate_R( Z )
+# mean estimate
+estimate_R( Z, median = FALSE )
+# standard sample covariance estimate is similar but not identical
+cov( Z, use = 'pairwise.complete.obs' )
+```
+(This `Z` matrix doesn't have missingness, so estimates are slightly different than the earlier ones after we added missingness, but this function also handles missingness.)
+The median estimator is preferred for real data, because it is robust to outliers, which in this case corresponds to strong associations.
+We want to ignore strong associations because of course they are correlated between studies, but they are not correlated due to confounding.
+The mean estimator is more robust if there are no outliers (since this simulation has no outliers, the mean estimator will appear better here, but real data is different!).
+The last one above, the standard sample covariance estimator, is most similar to the mean estimator except it also centers the z-scores before the comparison, which is theoretically not needed for z-scores since they are supposed to have zero means, which is why we don't use that either.
+
+## Under the hood: the correlated Standard Normal product distribution
+
+The mean product of z-scores estimates the desired correlations `rho` between studies.
+Although the median is more robust, it turns out that the naive median of the products of z-scores does not equal the mean, because this distribution has long tails.
+As we show shortly, the mapping between medians and means depends on the unknown parameter `rho`, so unfortunately many calculations are needed to achieve this.
+Here we summarize the features of this family of distributions and validate the calculations with simulated data.
+Please see our paper for the equations.
+
+First, use `rprodcor` to draw random values from this distribution, which is easy to do because drawing correlated standard normal values is easy.
+The we compare their distribution (black) to the density (`dprodcor`) and cumulative (`pprodcor`) formulas (red), and find excellent agreement:
+```{r}
+n <- 10000
+rho <- 0.33
+
+# draw random values from this distribution
+x <- rprodcor( n, rho )
+x <- sort( x )
+# this is the theoretical density function at those points
+y <- dprodcor( x, rho )
+
+# compare empirical and theoretical densities
+hist( x, breaks = 100, freq = FALSE )
+lines( x, y, col = 'red' )
+
+# compare empirical and theoretical CDF now
+yc <- pprodcor( x, rho )
+plot( ecdf( x ) )
+lines( x, yc, lty = 2, col = 'red' )
+```
+
+Let's now plot the densities for a few values of `rho`, from -1 to 1 is valid.
+Note that `rho=1` is the chi-squared distribution.
+Also note all of these densities diverge at `x = 0`, and that negative correlations flip the density about the y-axis, or in other words `dprodcor( x, -rho ) = dprodcor( -x, rho )`.
+```{r}
+x <- ( (-200) : 200 ) / 100
+plot( x, dprodcor( x, -1 ), type ='l', col = 'red', ylab = 'Density' )
+lines( x, dprodcor( x, -0.5 ), col = 'orange' )
+lines( x, dprodcor( x, 0 ), col = 'black' )
+lines( x, dprodcor( x, 0.5 ), col = 'green' )
+lines( x, dprodcor( x, 1 ), col = 'blue' )
+legend(
+    'topright',
+    legend = c( -1, -0.5, 0, 0.5, 1 ),
+    col = c( 'red', 'orange', 'black', 'green', 'blue' ),
+    lty = 1,
+    title = expression( rho )
+)
+```
+
+Repeat for the cumulative functions:
+```{r}
+plot( x, pprodcor( x, -1 ), type ='l', col = 'red', ylim = c(0,1), ylab = 'CDF' )
+lines( x, pprodcor( x, -0.5 ), col = 'orange' )
+lines( x, pprodcor( x, 0 ), col = 'black' )
+lines( x, pprodcor( x, 0.5 ), col = 'green' )
+lines( x, pprodcor( x, 1 ), col = 'blue' )
+legend(
+    'bottomright',
+    legend = c( -1, -0.5, 0, 0.5, 1 ),
+    col = c( 'red', 'orange', 'black', 'green', 'blue' ),
+    lty = 1,
+    title = expression( rho )
+)
+```
+
+And the quantile functions:
+```{r}
+p <- ( 100 : 900 ) / 1000
+plot( p, qprodcor( p, -1 ), type ='l', col = 'red', ylim = c(-2,2), ylab = 'Quantile' )
+lines( p, qprodcor( p, -0.5 ), col = 'orange' )
+lines( p, qprodcor( p, 0 ), col = 'black' )
+lines( p, qprodcor( p, 0.5 ), col = 'green' )
+lines( p, qprodcor( p, 1 ), col = 'blue' )
+legend(
+    'bottomright',
+    legend = c( -1, -0.5, 0, 0.5, 1 ),
+    col = c( 'red', 'orange', 'black', 'green', 'blue' ),
+    lty = 1,
+    title = expression( rho )
+)
+```
+
+Using these functions, we can map sample z-score product medians to the desired correlations using `rho_from_median`, which was used internally by `estimate_R` above:
+```{r}
+x <- ( (-500) : 500 ) / 1000
+plot( x, rho_from_median( x ), type ='l', ylab = 'Rho', xlab = 'Median' )
+# coarse approximation slope is given by chisq median
+em <- qchisq( 0.5, 1 ) # [1] 0.4549364
+abline( 0, 1/em, lty = 2, col = 'gray' )
+```

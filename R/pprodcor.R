@@ -30,7 +30,27 @@ pprodcor <- function( x, rho, eps = 1e-8 ) {
         # this is the adequate transformation for negative correlations
         return( 1 - stats::pchisq( -x, df = 1 ) )
     # else continue...
-    
+
+    # interpolate for rho between 0.95 and 1, where inaccuracy blows up
+    # I made a lot of plots and determined that this threshold works best
+    rho_cut <- 0.95
+    if ( rho > rho_cut ) {
+        # calculate values at the two stable points
+        y1 <- stats::pchisq( x, df = 1 )
+        y2 <- pprodcor( x, rho_cut, eps = eps )
+        # and interpolate!
+        w <- ( 1 - rho ) / ( 1 - rho_cut )
+        y_out <- y1 * ( 1 - w ) + y2 * w
+        return( y_out )
+    } else if ( rho < -rho_cut ) {
+        # repeat on negative end
+        y1 <- 1 - stats::pchisq( -x, df = 1 )
+        y2 <- pprodcor( x, -rho_cut, eps = eps )
+        w <- ( 1 + rho ) / ( 1 - rho_cut )
+        y_out <- y1 * ( 1 - w ) + y2 * w
+        return( y_out )
+    }
+
     # start calculating individual values
     n <- length( x )
     y <- rep.int( NA, n )

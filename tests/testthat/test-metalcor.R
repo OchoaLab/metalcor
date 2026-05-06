@@ -92,6 +92,21 @@ test_that("*prodcor family works", {
     # not really a "edge" case, but still expected to be a very common request
     validate_prodcor( n, x, p, rho = 0 )
 
+    # a specific relevant edge case, for median calculations
+    # backtracking from quantiles to cumulatives
+    # these should decrease as rho increases
+    y99 <- pprodcor( em, 0.99 )
+    y999 <- pprodcor( em, 0.999 )
+    y1 <- pprodcor( em, 1 )
+    expect_true( y99 > y999 )
+    expect_true( y999 > y1 )
+
+    # downstream effect 
+    y99 <- qprodcor( 0.5, 0.99 )
+    y999 <- qprodcor( 0.5, 0.999 )
+    y1 <- qprodcor( 0.5, 1 )
+    expect_true( y99 < y999 )
+    expect_true( y999 < y1 )
 })
 
 test_that( "rho_from_median works", {
@@ -121,6 +136,18 @@ test_that( "rho_from_median works", {
     expect_error( rho_from_median( letters ) )
 
     # a succesful case
+    expect_silent( 
+        y <- rho_from_median( x )
+    )
+    expect_true( is.numeric( y ) )
+    expect_true( !anyNA( y ) )
+    expect_equal( length( y ), n )
+    # these should have the same sign
+    expect_true( min( y * x ) >= 0 )
+
+    # run a new example from vignette that failed (until debugged)
+    x <- ( (-1500) : 1500 ) / 1000
+    n <- length( x )
     expect_silent( 
         y <- rho_from_median( x )
     )
