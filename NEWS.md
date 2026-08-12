@@ -12,3 +12,7 @@
 - CRAN submission
   - Minor spellcheck edits
 - Added logo, displayed on readme
+
+# metalcor 1.0.1 (2026-08-12)
+
+- Added accepted paper citation to README, updated DOI in DESCRIPTION.

@@ -54,4 +54,5 @@ All of this is needed so the correlation estimates are robust to outlier z-score
 
 ## Citation
 
-> Tu, T., Ochoa, A., 2026. [Genetic association meta-analysis is susceptible to confounding by between-study cryptic relatedness]([https://www.kidney-international.org/article/S0085-2538(26)00134-1/fulltext](https://www.cell.com/hgg-advances/fulltext/S2666-2477(26)00097-7)). Human Genetics and Genomics Advances. doi.org/10.1016/j.xhgg.2026.100657
+Tu, T., Ochoa, A., 2026. [Genetic association meta-analysis is susceptible to confounding by between-study cryptic relatedness](
+https://www.cell.com/hgg-advances/fulltext/S2666-2477(26)00097-7). Human Genetics and Genomics Advances. doi.org/10.1016/j.xhgg.2026.100657

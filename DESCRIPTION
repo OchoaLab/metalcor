@@ -1,6 +1,6 @@
 Package: metalcor
 Title: Meta-Analysis of Correlated Genetic Association Studies
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: c(
     person(given = "Alejandro",
 	   family = "Ochoa",
@@ -13,11 +13,10 @@ Authors@R: c(
 	   email = "tiffany.tu@duke.edu",
            comment = c(ORCID = "0000-0002-9357-6660"))
     )
-Description: The main function performs meta-analysis of genetic association study summary statistics that may be correlated due to cryptic relatedness or other confounders, generalizing inverse variance weighted methods.  The function that estimates the correlation structure is also provided standalone.  Another key innovation, the estimation of the correlation parameter from the median product of correlated standard normal variables, is provided, as well as a complete set of functions for their underlying distribution: density, cumulative, quantile, and random deviates.  Described in Tu and Ochoa (2025) <doi:10.1101/2025.05.10.653279>.
+Description: The main function performs meta-analysis of genetic association study summary statistics that may be correlated due to cryptic relatedness or other confounders, generalizing inverse variance weighted methods.  The function that estimates the correlation structure is also provided standalone.  Another key innovation, the estimation of the correlation parameter from the median product of correlated standard normal variables, is provided, as well as a complete set of functions for their underlying distribution: density, cumulative, quantile, and random deviates.  Described in Tu and Ochoa (2025) <doi:10.1016/j.xhgg.2026.100657>.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
 Suggests: 
     knitr,
     rmarkdown,
@@ -31,3 +30,4 @@ Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://github.com/OchoaLab/metalcor
 BugReports: https://github.com/OchoaLab/metalcor/issues
+Config/roxygen2/version: 8.1.0
