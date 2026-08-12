@@ -51,3 +51,7 @@ Under the hood of `estimate_R` there is a whole suite of functions concerning th
 In particular, following the model of base R distributions such as `dnorm` and `dunif`, this package provides `dprodcor`, `pprodcor`, `qprodcor`, and `rprodcor`, which are the density, cumulative, quantile, and random deviate functions, respectively.
 Lastly, `rho_from_median` implements the estimator of the correlation parameter given the sample median of the product of z-scores.
 All of this is needed so the correlation estimates are robust to outlier z-scores, which correspond to highly associated loci.
+
+## Citation
+
+> Tu, T., Ochoa, A., 2026. [Genetic association meta-analysis is susceptible to confounding by between-study cryptic relatedness]([https://www.kidney-international.org/article/S0085-2538(26)00134-1/fulltext](https://www.cell.com/hgg-advances/fulltext/S2666-2477(26)00097-7)). Human Genetics and Genomics Advances. doi.org/10.1016/j.xhgg.2026.100657
