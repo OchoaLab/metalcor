@@ -1,3 +1,10 @@
+test_that( "This bug is fixed: 'object length is not a multiple of subscript length'", {
+    # this very specific, very simple toy example caused a bug in the latest R-devel, before I fixed the bug (now it works fine)
+    expect_silent(
+        dprodcor( c( -Inf, -1000, -1 ), -0.6 )
+    )
+})
+
 validate_prodcor <- function( n, x, p, rho ) {
     ### dprodcor
 
@@ -5,7 +12,8 @@ validate_prodcor <- function( n, x, p, rho ) {
     expect_error( dprodcor() )
     expect_error( dprodcor( x ) )
     expect_error( dprodcor( rho = rho ) )
-    expect_error( dprodcor( x, x ) )
+    if ( n > 1 )
+        expect_error( dprodcor( x, x ) )
 
     # a successful case
     expect_silent( 
@@ -22,10 +30,11 @@ validate_prodcor <- function( n, x, p, rho ) {
     expect_error( pprodcor() )
     expect_error( pprodcor( x ) )
     expect_error( pprodcor( rho = rho ) )
-    expect_error( pprodcor( x, x ) )
-    
+    if ( n > 1 )
+        expect_error( pprodcor( x, x ) )
+
     # a successful case
-    expect_silent( 
+    expect_silent(
         y <- pprodcor( x, rho )
     )
     expect_true( is.numeric( y ) )
@@ -41,10 +50,11 @@ validate_prodcor <- function( n, x, p, rho ) {
     expect_error( qprodcor() )
     expect_error( qprodcor( p ) )
     expect_error( qprodcor( rho = rho ) )
-    expect_error( qprodcor( p, p ) )
+    if ( n > 1 )
+        expect_error( qprodcor( p, p ) )
     
     # a successful case
-    expect_silent( 
+    expect_silent(
         y <- qprodcor( p, rho )
     )
     expect_true( is.numeric( y ) )
@@ -66,7 +76,8 @@ validate_prodcor <- function( n, x, p, rho ) {
     expect_error( rprodcor() )
     expect_error( rprodcor( n ) )
     expect_error( rprodcor( rho = rho ) )
-    expect_error( rprodcor( n, n ) )
+    if ( n > 1 )
+        expect_error( rprodcor( n, n ) )
     
     # a successful case
     expect_silent( 

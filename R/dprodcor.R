@@ -72,10 +72,11 @@ dprodcor <- function( x, rho ) {
     indexes <- is.na( y )
     if ( any( indexes ) ) {
         # handle both positive and negative cases...
-        indexes_neg <- x[ indexes ] < 0
-        y[ indexes[ indexes_neg ] ] <- 0
+        # this works when there were no negative cases (without errors/warnings)
+        indexes_neg <- indexes & ( x < 0 )
+        y[ indexes_neg ] <- 0
         # subset positive cases
-        indexes <- indexes[ !indexes_neg ]
+        indexes <- indexes & !indexes_neg
         x <- x[ indexes ]
         y[ indexes ] <- 1 / sqrt( 2 * pi * x ) * exp( - x / ( 1 + rho ) )
     }

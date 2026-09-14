@@ -16,3 +16,8 @@
 # metalcor 1.0.1 (2026-08-12)
 
 - Added accepted paper citation to README, updated DOI in DESCRIPTION.
+
+# metalcor 1.0.2 (2026-09-14)
+
+- Functions `*prodcor` fixed a bug revealed by a new warning in R-devel only: "object length is not a multiple of subscript length".  The bug was there previously, though it occurred rarely, but it was silent in previous R versions.
+  - From R-devel news, this is the change that triggers the new warnings addressed by this fix: "x[logi], with logi a logical index, now warns if length(x) is not a multiple of length(logi), fixing PR#19155 thanks to several participants in two R Dev Days and the R Sprint in 2026."
