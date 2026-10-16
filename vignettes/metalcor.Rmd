@@ -52,6 +52,8 @@ study1 <- tibble(
     id = 1 : m,
     chr = ceiling( id / m * 10 ),
     pos = id,
+    ref = 'A',
+    alt = 'G',
     n = 1000,
     z = Z[, 1],
     se = runif( m, 0, 1 / sqrt( n ) ),
@@ -61,7 +63,7 @@ study1 <- tibble(
 # note that, besides the different Z scores, there's also different sample sizes per study,
 # and standard errors scale inversely proportional to the square root of study size
 study2 <- study1 %>%
-    select( id, chr, pos) %>%
+    select( id, chr, pos, ref, alt ) %>%
     mutate(
         n = 2000,
         z = Z[, 2],
@@ -69,7 +71,7 @@ study2 <- study1 %>%
         beta = z * se
     )
 study3 <- study1 %>%
-    select( id, chr, pos) %>%
+    select( id, chr, pos, ref, alt ) %>%
     mutate(
         n = 10000,
         z = Z[, 3],
@@ -82,6 +84,7 @@ study2 <- study2[ sort( sample.int( m, m * 0.9) ), ]
 study3 <- study3[ sort( sample.int( m, m * 0.9) ), ]
 ```
 Above, the tables contain z-scores, because we constructed them first and `beta` and `se` are derived, but `beta` and `se` are mandatory columns, as are the rest of the columns in the above example except for `z`, which are always recalculated as `beta/se` by `metalcor`.
+For simplicity, in this example we didn't reverse any ref/alt alleles, which would change the signs of the `beta` coefficients, but `metalcor` automatically identifies those cases and corrects the sign accordingly.
 
 ## Perform meta-analysis
 

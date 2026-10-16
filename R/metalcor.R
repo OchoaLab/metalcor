@@ -2,10 +2,10 @@
 #'
 #' This function accepts the summary statistics from several studies, estimates their z-score correlation matrix, and performs the meta-analysis taking those correlations into account.
 #'
-#' @param studies A list of `S` studies, each of which is a data frame with the following required columns: `id`, `chr`, `pos`, `beta`, `se`, `n`.
+#' @param studies A list of `S` studies, each of which is a data frame with the following required columns: `id`, `chr`, `pos`, `ref`, `alt`, `beta`, `se`, `n`.
 #' Column names have to match exactly.
-#' `id` is used to match variants between studies (they must be unique for different variants, and be the same for the same variant).
-#' `chr` and `pos` are used solely to sort variants after the studies have been merged.
+#' `id`, `chr`, `pos`, `ref` and `alt` are jointly used to match variants between studies (they must be unique for different variants, and be the same for the same variant), except that `ref` and `alt` values may be switched in different studies.
+#' `chr` and `pos` are also used to sort variants after the studies have been merged.
 #' `beta` and `se` are required to perform meta-analysis.
 #' `n` is used to report locus-specific total sample sizes under missingness.
 #' @param median If `TRUE` (default), estimates correlations from sample medians instead of means.
@@ -14,7 +14,8 @@
 #' @param tol Determinant tolerance for singularity test of R estimate
 #'
 #' @return A list with two named elements:
-#' - `assoc`: the meta-analyzed study, a tibble with columns `id`, `chr`, `pos`, `n`, `n_studies`, `beta`, `se`, `z`, and `p`; sorted by `chr` and `pos`.
+#' - `assoc`: the meta-analyzed study, a tibble with columns `id`, `chr`, `pos`, `ref`, `alt`, `n`, `n_studies`, `beta`, `se`, `z`, and `p`; sorted by `chr` and `pos`.
+#'   `ref` and `alt` values are those of the first study in which each variant appears, and if a subsequent study has then switched, the variant is aligned by changing the sign of its `beta` prior to meta-analysis.
 #' - `R`: the `S`-by-`S` estimated z-score covariance matrix
 #'
 #' @examples
@@ -23,18 +24,23 @@
 #'   id = paste0( 'rs', 1:5 ),
 #'   chr = 1,
 #'   pos = 1:5,
+#'   ref = 'A',
+#'   alt = 'G',
 #'   n = 2000,
 #'   beta = rnorm( 5 ),
-#'   se = rnorm( 5 )
+#'   se = abs( rnorm( 5 ) )
 #' )
 #' # note the second study is missing the 5th SNP, this is fine
+#' # also, the 4th SNP is has switched ref/alt values
 #' study2 <- data.frame(
 #'   id = paste0( 'rs', 1:4 ),
 #'   chr = 1,
 #'   pos = 1:4,
+#'   ref = c( 'A', 'A', 'A', 'G' ),
+#'   alt = c( 'G', 'G', 'G', 'A' ),
 #'   n = 5000,
 #'   beta = rnorm( 4 ),
-#'   se = rnorm( 4 )
+#'   se = abs( rnorm( 4 ) )
 #' )
 #'
 #' # gather the studies in a list
@@ -69,7 +75,7 @@ metalcor <- function( studies, median = TRUE, df = 1, tol = 1e-8 ) {
     colnames( betas ) <- NULL
     colnames( ses ) <- NULL
     # exclude the separate betas and ses from the data frames now
-    study_full <- dplyr::select( study_full, 'id', 'chr', 'pos', 'n' )
+    study_full <- dplyr::select( study_full, 'id', 'chr', 'pos', 'ref', 'alt', 'n' )
 
     # estimate the correlation matrix
     # compute z scores matrix on the fly, by elementwise normalization
@@ -78,7 +84,7 @@ metalcor <- function( studies, median = TRUE, df = 1, tol = 1e-8 ) {
     # this performs the actual calculations
     gwas_meta <- meta_corr_math( betas, ses, R, df = df )
 
-    # add back the id/chr/pos and we're done
+    # add back the id/chr/pos/ref/alt and we're done
     gwas_meta <- dplyr::bind_cols( study_full, gwas_meta )
     # return R matrix too
     list(
@@ -90,22 +96,43 @@ metalcor <- function( studies, median = TRUE, df = 1, tol = 1e-8 ) {
 merge_studies <- function( studies ) {
     S <- length( studies )
 
-    # check that each element is a data frame, errors get confusing otherwisee
+    # check that each element is a data frame, errors get confusing otherwise
     for ( j in 1 : S )
         if ( !is.data.frame( studies[[ j ]] ) )
             stop( 'Study ', j, ' was not a data frame!' )
         
     # make a merged data frame, doing full join of two studies at the time
     # 1) each study we toss the non-essential columns,
-    # 2) columns to merge on (id, chr, pos) are kept same name in each study pre-merge, but columns to keep different per study are explicitly numbered
-    study_full <- dplyr::select( studies[[1]], 'id', 'chr', 'pos', beta1 = 'beta', se1 = 'se', n1 = 'n' )
+    # 2) columns to merge on (id, chr, pos, ref, alt) are kept same name in each study pre-merge, but columns to keep different per study are explicitly numbered
+    study_full <- dplyr::select( studies[[1]], 'id', 'chr', 'pos', 'ref', 'alt', beta1 = 'beta', se1 = 'se', n1 = 'n' )
     for ( j in 2 : S ) {
         # use only desired columns
-        study_j <- dplyr::select( studies[[j]], 'id', 'chr', 'pos', 'beta', 'se', 'n' )
+        study_j <- dplyr::select( studies[[j]], 'id', 'chr', 'pos', 'ref', 'alt', 'beta', 'se', 'n' )
+
+        # identify data that would match except ref/alt are switched
+        # first exclude matches by id/chr/pos/ref/alt (we won't alter those), leaving those we might alter
+        tmp <- dplyr::anti_join( study_j, study_full, by = dplyr::join_by( 'id', 'chr', 'pos', 'ref', 'alt' ) )
+        # in this subset, switch ref/alt now
+        tmp <- dplyr::rename( tmp, ref = 'alt', alt = 'ref' )
+        # we want the subset that matches now
+        tmp <- dplyr::semi_join( tmp, study_full, by = dplyr::join_by( 'id', 'chr', 'pos', 'ref', 'alt' ) )
+        if ( nrow( tmp ) > 0 ) {
+            # now we know which rows to switch, get their indexes
+            # here use simple matching by ID
+            indexes <- study_j$id %in% tmp$id
+            # most important transformation is changing the sign of the coefficient!  No other stats need to change
+            study_j$beta[ indexes ] <- - study_j$beta[ indexes ]
+            # but we also need to switch ref and alt here, only on these rows
+            tmp2 <- study_j$ref[ indexes ]
+            study_j$ref[ indexes ] <- study_j$alt[ indexes ]
+            study_j$alt[ indexes ] <- tmp2
+            # done!
+        }
+        
         # append number to columns we want differentiated
         study_j <- dplyr::rename_with( study_j, ~ paste0(.x, j), .cols = c( 'beta', 'se', 'n' ) )
-        # now we can apply the join
-        study_full <- dplyr::full_join( study_full, study_j, by = dplyr::join_by( 'id', 'chr', 'pos' ) )
+        # now we can apply the join, keeping unmatched things as separate rows
+        study_full <- dplyr::full_join( study_full, study_j, by = dplyr::join_by( 'id', 'chr', 'pos', 'ref', 'alt' ) )
     }
 
     # trivial sum of sample sizes across non-missing studies, no other use for the n's

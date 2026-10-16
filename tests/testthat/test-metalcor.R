@@ -197,8 +197,6 @@ test_that( "estimate_R works", {
     }
 })
 
-
-
 test_that( "metalcor works", {
     # pick a dense subset of 1000 loci, with some non-overlap to test missingness properly
     n <- 1000
@@ -210,23 +208,74 @@ test_that( "metalcor works", {
     studies <- NULL
     for ( i in 1 : S ) {
         # ids have to be unique
-        # have more than one chr, but to keep high overlap let's hav eit be deterministic with pos
+        # have more than one chr, but to keep high overlap let's have it be deterministic with pos
+        # ref and alt just have to be present, and different...
         ids <- sample.int( n, n_sub )
         study <- data.frame(
             id = ids,
             chr = 1 + round( ids / 250 ),
             pos = ids,
+            ref = 'A',
+            alt = 'G',
             n = i * 1000,
             beta = rnorm( n_sub ),
-            se = rnorm( n_sub )
+            se = abs( rnorm( n_sub ) ) + 1e-8 # should be positive, avoid perfect zeroes
         )
         studies <- c( studies, list( study ) )
     }
 
+    # alternate version with random loci flipped in the 2nd and 3rd studies
+    # this will safely edit a copy
+    studies2 <- studies
+    # don't flip IDs missing in first study, that will change output and complicate comparison
+    study1_ids <- studies2[[ 1 ]]$id
+    for ( i in 2 : S ) {
+        # working copy
+        study <- studies2[[ i ]]
+        # flip half of each dataset
+        indexes <- sample.int( n_sub, n_sub / 2 )
+        # keep only loci present in the first study
+        indexes <- indexes[ study$id[ indexes ] %in% study1_ids ]
+        # change sign of coefficient
+        study$beta[ indexes ] <- - study$beta[ indexes ]
+        # and switch ref and alt
+        tmp <- study$ref[ indexes ]
+        study$ref[ indexes ] <- study$alt[ indexes ]
+        study$alt[ indexes ] <- tmp
+        # put update back in list
+        studies2[[ i ]] <- study
+    }
+    
     for ( median in c(TRUE, FALSE) ) {
         expect_silent(
             out <- metalcor( studies, median = median )
         )
+
+        # basic validation of this output
+        expect_true( is.list( out ) )
+        expect_equal( names( out ), c('assoc', 'R') )
+        # validate assoc
+        assoc <- out$assoc
+        expect_true( is.data.frame( assoc ) )
+        expect_equal( colnames( assoc ), c('id', 'chr', 'pos', 'ref', 'alt', 'n', 'n_studies', 'beta', 'se', 'z', 'p') )
+        expect_true( all( assoc$n > 0 ) )
+        expect_true( all( assoc$n_studies > 0 ) )
+        expect_true( all( assoc$n_studies <= S ) )
+        expect_true( all( assoc$se > 0 ) )
+        expect_true( all( assoc$p >= 0 ) )
+        expect_true( all( assoc$p <= 1 ) )
+        # validate R
+        R <- out$R
+        expect_true( is.matrix( R ) )
+        expect_equal( dim( R ), c(S, S) )
+        # as a covariance matrix, diagonal is always non-negative
+        expect_true( all( diag( R ) > 0 ) )
+        
+        # repeat for flipped data, should get the same answer!
+        expect_silent(
+            out2 <- metalcor( studies2, median = median )
+        )
+        expect_equal( out2, out )
     }
 })
 

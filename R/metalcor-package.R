@@ -12,18 +12,23 @@
 #'   id = paste0( 'rs', 1:5 ),
 #'   chr = 1,
 #'   pos = 1:5,
+#'   ref = 'A',
+#'   alt = 'G',
 #'   n = 2000,
 #'   beta = rnorm( 5 ),
-#'   se = rnorm( 5 )
+#'   se = abs( rnorm( 5 ) )
 #' )
 #' # note the second study is missing the 5th SNP, this is fine
+#' # also, the 4th SNP is has switched ref/alt values
 #' study2 <- data.frame(
 #'   id = paste0( 'rs', 1:4 ),
 #'   chr = 1,
 #'   pos = 1:4,
+#'   ref = c( 'A', 'A', 'A', 'G' ),
+#'   alt = c( 'G', 'G', 'G', 'A' ),
 #'   n = 5000,
 #'   beta = rnorm( 4 ),
-#'   se = rnorm( 4 )
+#'   se = abs( rnorm( 4 ) )
 #' )
 #' 
 #' library(metalcor)

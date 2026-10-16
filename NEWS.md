@@ -21,3 +21,7 @@
 
 - Functions `*prodcor` fixed a bug revealed by a new warning in R-devel only: "object length is not a multiple of subscript length".  The bug was there previously, though it occurred rarely, but it was silent in previous R versions.
   - From R-devel news, this is the change that triggers the new warnings addressed by this fix: "x[logi], with logi a logical index, now warns if length(x) is not a multiple of length(logi), fixing PR#19155 thanks to several participants in two R Dev Days and the R Sprint in 2026."
+
+# metalcor 1.0.3 (2026-10-16)
+
+- Function `metalcor` now requires input studies to have `ref` and `alt` columns, and switches them correctly (correcting coefficient sign) when they are switched between studies.  This saves users time when ref/alt alleles are switched in real studies, but users must still ensure that data is otherwise well harmonized.
