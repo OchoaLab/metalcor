@@ -17,7 +17,7 @@ metalcor(
 \item{studies}{A list of \code{S} studies, each of which is a data frame with the following required columns: \code{chr}, \code{pos}, \code{ref}, \code{alt}, \code{beta}, \code{se}, \code{n}.
 Column names have to match exactly.
 \code{chr}, \code{pos}, \code{ref} and \code{alt} are jointly used to match variants between studies (they must be unique for different variants, and be the same for the same variant), except if \code{noswitch = FALSE} (default) then \code{ref} and \code{alt} values may be switched in different studies.
-\code{chr} and \code{pos} are also used to sort variants after the studies have been merged.
+\code{chr} and \code{pos} are also used to sort variants after the studies have been merged (please have numeric \code{chr} for best results).
 \code{beta} and \code{se} are required to perform meta-analysis.
 \code{n} is used to report locus-specific total sample sizes under missingness.}
 
@@ -40,7 +40,7 @@ IDs can be useful when ref/alt switches are allowed, to better disambiguate matc
 A list with two named elements:
 \itemize{
 \item \code{assoc}: the meta-analyzed study, a tibble with columns \code{id} (if \code{useid = TRUE}), \code{chr}, \code{pos}, \code{ref}, \code{alt}, \code{n}, \code{n_studies}, \code{beta}, \code{se}, \code{z}, and \code{p}; sorted by \code{chr} and \code{pos}.
-\code{ref} and \code{alt} values are those of the first study in which each variant appears, and if a subsequent study has then switched, the variant is aligned by changing the sign of its \code{beta} prior to meta-analysis.
+If \code{noswitch = FALSE} (default), \code{ref} and \code{alt} values are those of the first study in which each variant appears, and if a subsequent study has then switched, the variant is aligned by changing the sign of its \code{beta} prior to meta-analysis.
 \item \code{R}: the \code{S}-by-\code{S} estimated z-score covariance matrix
 }
 }

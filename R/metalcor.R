@@ -5,7 +5,7 @@
 #' @param studies A list of `S` studies, each of which is a data frame with the following required columns: `chr`, `pos`, `ref`, `alt`, `beta`, `se`, `n`.
 #' Column names have to match exactly.
 #' `chr`, `pos`, `ref` and `alt` are jointly used to match variants between studies (they must be unique for different variants, and be the same for the same variant), except if `noswitch = FALSE` (default) then `ref` and `alt` values may be switched in different studies.
-#' `chr` and `pos` are also used to sort variants after the studies have been merged.
+#' `chr` and `pos` are also used to sort variants after the studies have been merged (please have numeric `chr` for best results).
 #' `beta` and `se` are required to perform meta-analysis.
 #' `n` is used to report locus-specific total sample sizes under missingness.
 #' @param median If `TRUE` (default), estimates correlations from sample medians instead of means.
@@ -21,7 +21,7 @@
 #'
 #' @return A list with two named elements:
 #' - `assoc`: the meta-analyzed study, a tibble with columns `id` (if `useid = TRUE`), `chr`, `pos`, `ref`, `alt`, `n`, `n_studies`, `beta`, `se`, `z`, and `p`; sorted by `chr` and `pos`.
-#'   `ref` and `alt` values are those of the first study in which each variant appears, and if a subsequent study has then switched, the variant is aligned by changing the sign of its `beta` prior to meta-analysis.
+#'   If `noswitch = FALSE` (default), `ref` and `alt` values are those of the first study in which each variant appears, and if a subsequent study has then switched, the variant is aligned by changing the sign of its `beta` prior to meta-analysis.
 #' - `R`: the `S`-by-`S` estimated z-score covariance matrix
 #'
 #' @examples
@@ -161,8 +161,8 @@ merge_studies <- function( studies, useid, noswitch ) {
     # immediately remove the separate n values
     study_full <- dplyr::select( study_full, !tidyselect::num_range( "n", 1:S ) )
 
-    # data can be kinda sorted but not quite, lets sort now (only use for chr/pos) 
-    study_full <- dplyr::arrange( study_full, 'chr', 'pos' )
+    # data can be kinda sorted but not quite, lets sort now!
+    study_full <- dplyr::arrange( study_full, .data$chr, .data$pos )
 
     # done merging!
     study_full

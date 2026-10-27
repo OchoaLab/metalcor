@@ -211,6 +211,26 @@ validate_metalcor <- function( out, S ) {
     expect_true( all( assoc$se > 0 ) )
     expect_true( all( assoc$p >= 0 ) )
     expect_true( all( assoc$p <= 1 ) )
+    
+    # confirm that data is sorted as desired!
+    # this assumes numeric chromosomes!
+    expect_true( all( diff( assoc$chr ) >= 0 ) )
+    # positions are more complicated, since each chr as-is resets pos to 0. this adds an offset that makes it work
+    # first get max position per chromosome
+    chr2posmax <- dplyr::summarize( dplyr::group_by( assoc, chr ), posmax = max( pos ) )
+    nchr <- nrow( chr2posmax )
+    if ( nchr > 1 ) {
+        # then get cumulative sum
+        chr2posmax$cumposmax <- cumsum( chr2posmax$posmax )
+        # want first chromosome to be zero, and the rest to be shifted
+        chr2posmax$cumposmax[ 2 : nchr ] <- chr2posmax$cumposmax[ 1 : ( nchr - 1 ) ]
+        chr2posmax$cumposmax[ 1 ] <- 0
+        assoc$pos2 <- assoc$pos + chr2posmax$cumposmax[ match( assoc$chr, chr2posmax$chr ) ]
+    } else
+        # single chromosome has trivial shift
+        assoc$pos2 <- assoc$pos
+    expect_true( all( diff( assoc$pos2 ) >= 0 ) )
+    
     # validate R
     R <- out$R
     expect_true( is.matrix( R ) )
