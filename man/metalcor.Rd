@@ -4,12 +4,19 @@
 \alias{metalcor}
 \title{Meta-Analysis of Correlated Genetic Association Studies}
 \usage{
-metalcor(studies, median = TRUE, df = 1, tol = 1e-08)
+metalcor(
+  studies,
+  median = TRUE,
+  df = 1,
+  tol = 1e-08,
+  useid = FALSE,
+  noswitch = FALSE
+)
 }
 \arguments{
-\item{studies}{A list of \code{S} studies, each of which is a data frame with the following required columns: \code{id}, \code{chr}, \code{pos}, \code{ref}, \code{alt}, \code{beta}, \code{se}, \code{n}.
+\item{studies}{A list of \code{S} studies, each of which is a data frame with the following required columns: \code{chr}, \code{pos}, \code{ref}, \code{alt}, \code{beta}, \code{se}, \code{n}.
 Column names have to match exactly.
-\code{id}, \code{chr}, \code{pos}, \code{ref} and \code{alt} are jointly used to match variants between studies (they must be unique for different variants, and be the same for the same variant), except that \code{ref} and \code{alt} values may be switched in different studies.
+\code{chr}, \code{pos}, \code{ref} and \code{alt} are jointly used to match variants between studies (they must be unique for different variants, and be the same for the same variant), except if \code{noswitch = FALSE} (default) then \code{ref} and \code{alt} values may be switched in different studies.
 \code{chr} and \code{pos} are also used to sort variants after the studies have been merged.
 \code{beta} and \code{se} are required to perform meta-analysis.
 \code{n} is used to report locus-specific total sample sizes under missingness.}
@@ -20,11 +27,19 @@ Passed to \code{\link[=estimate_R]{estimate_R()}}.}
 \item{df}{Degree of freedom for calculating the p-values from the z-scores (default of 1 is best practically always).}
 
 \item{tol}{Determinant tolerance for singularity test of R estimate}
+
+\item{useid}{Additionally use IDs for matching and in outputs.
+If \code{FALSE} (default), IDs are totally ignored, even if inputs had them.
+If \code{TRUE}, \code{id} will be used to match variants (together with \code{chr}, \code{pos}, \code{ref}, \code{alt}), and there will be \code{id} in the output.
+IDs can be useful when ref/alt switches are allowed, to better disambiguate matching allele pairs, especially for unstandardized indels.}
+
+\item{noswitch}{Do not allow \code{ref} and \code{alt} switching.  Default is to attempt to switch them for a locus and study if matching failed otherwise.
+\code{noswitch = TRUE} can be a good idea if you're sure most or all of your data is aligned to reference, or when insertions and deletions both appear and are symmetric (for example, in one allele pair "A/AB" and another "AB/A"), which can result in confusion.}
 }
 \value{
 A list with two named elements:
 \itemize{
-\item \code{assoc}: the meta-analyzed study, a tibble with columns \code{id}, \code{chr}, \code{pos}, \code{ref}, \code{alt}, \code{n}, \code{n_studies}, \code{beta}, \code{se}, \code{z}, and \code{p}; sorted by \code{chr} and \code{pos}.
+\item \code{assoc}: the meta-analyzed study, a tibble with columns \code{id} (if \code{useid = TRUE}), \code{chr}, \code{pos}, \code{ref}, \code{alt}, \code{n}, \code{n_studies}, \code{beta}, \code{se}, \code{z}, and \code{p}; sorted by \code{chr} and \code{pos}.
 \code{ref} and \code{alt} values are those of the first study in which each variant appears, and if a subsequent study has then switched, the variant is aligned by changing the sign of its \code{beta} prior to meta-analysis.
 \item \code{R}: the \code{S}-by-\code{S} estimated z-score covariance matrix
 }
@@ -35,7 +50,6 @@ This function accepts the summary statistics from several studies, estimates the
 \examples{
 # construct two toy studies just to run example, with minimal columns
 study1 <- data.frame(
-  id = paste0( 'rs', 1:5 ),
   chr = 1,
   pos = 1:5,
   ref = 'A',
@@ -47,7 +61,6 @@ study1 <- data.frame(
 # note the second study is missing the 5th SNP, this is fine
 # also, the 4th SNP is has switched ref/alt values
 study2 <- data.frame(
-  id = paste0( 'rs', 1:4 ),
   chr = 1,
   pos = 1:4,
   ref = c( 'A', 'A', 'A', 'G' ),

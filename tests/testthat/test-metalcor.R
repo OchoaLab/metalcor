@@ -197,6 +197,28 @@ test_that( "estimate_R works", {
     }
 })
 
+validate_metalcor <- function( out, S ) {
+    # basic validation of this output
+    expect_true( is.list( out ) )
+    expect_equal( names( out ), c('assoc', 'R') )
+    # validate assoc
+    assoc <- out$assoc
+    expect_true( is.data.frame( assoc ) )
+    expect_equal( colnames( assoc ), c('id', 'chr', 'pos', 'ref', 'alt', 'n', 'n_studies', 'beta', 'se', 'z', 'p') )
+    expect_true( all( assoc$n > 0 ) )
+    expect_true( all( assoc$n_studies > 0 ) )
+    expect_true( all( assoc$n_studies <= S ) )
+    expect_true( all( assoc$se > 0 ) )
+    expect_true( all( assoc$p >= 0 ) )
+    expect_true( all( assoc$p <= 1 ) )
+    # validate R
+    R <- out$R
+    expect_true( is.matrix( R ) )
+    expect_equal( dim( R ), c(S, S) )
+    # as a covariance matrix, diagonal is always non-negative
+    expect_true( all( diag( R ) > 0 ) )
+}
+
 test_that( "metalcor works", {
     # pick a dense subset of 1000 loci, with some non-overlap to test missingness properly
     n <- 1000
@@ -245,37 +267,76 @@ test_that( "metalcor works", {
         # put update back in list
         studies2[[ i ]] <- study
     }
+    # versions of both inputs without IDs
+    studies_noid <- studies
+    studies2_noid <- studies2
+    for ( i in 1 : S ) {
+        studies_noid[[ i ]]$id <- NULL
+        studies2_noid[[ i ]]$id <- NULL
+    }
     
     for ( median in c(TRUE, FALSE) ) {
         expect_silent(
-            out <- metalcor( studies, median = median )
+            out <- metalcor( studies, median = median, useid = TRUE )
         )
-
-        # basic validation of this output
-        expect_true( is.list( out ) )
-        expect_equal( names( out ), c('assoc', 'R') )
-        # validate assoc
-        assoc <- out$assoc
-        expect_true( is.data.frame( assoc ) )
-        expect_equal( colnames( assoc ), c('id', 'chr', 'pos', 'ref', 'alt', 'n', 'n_studies', 'beta', 'se', 'z', 'p') )
-        expect_true( all( assoc$n > 0 ) )
-        expect_true( all( assoc$n_studies > 0 ) )
-        expect_true( all( assoc$n_studies <= S ) )
-        expect_true( all( assoc$se > 0 ) )
-        expect_true( all( assoc$p >= 0 ) )
-        expect_true( all( assoc$p <= 1 ) )
-        # validate R
-        R <- out$R
-        expect_true( is.matrix( R ) )
-        expect_equal( dim( R ), c(S, S) )
-        # as a covariance matrix, diagonal is always non-negative
-        expect_true( all( diag( R ) > 0 ) )
+        validate_metalcor( out, S )
         
         # repeat for flipped data, should get the same answer!
         expect_silent(
-            out2 <- metalcor( studies2, median = median )
+            out2 <- metalcor( studies2, median = median, useid = TRUE )
         )
         expect_equal( out2, out )
+
+        # should also get the same results in these cases when ignoring IDs
+        # except output also doesn't have IDs
+        out_noid <- out
+        out_noid$assoc$id <- NULL
+        expect_silent(
+            out2 <- metalcor( studies, median = median, useid = FALSE )
+        )
+        expect_equal( out2, out_noid )
+        expect_silent(
+            out2 <- metalcor( studies_noid, median = median, useid = FALSE )
+        )
+        expect_equal( out2, out_noid )
+
+        expect_silent(
+            out2 <- metalcor( studies2, median = median, useid = FALSE )
+        )
+        expect_equal( out2, out_noid )
+        expect_silent(
+            out2 <- metalcor( studies2_noid, median = median, useid = FALSE )
+        )
+        expect_equal( out2, out_noid )
+
+        # noswitch also gives same result on aligned `studies`, but they will differ for `studies2`
+        expect_silent(
+            out2 <- metalcor( studies, median = median, noswitch = TRUE, useid = TRUE )
+        )
+        expect_equal( out2, out )
+        expect_silent(
+            out2 <- metalcor( studies, median = median, noswitch = TRUE, useid = FALSE )
+        )
+        expect_equal( out2, out_noid )
+        expect_silent(
+            out2 <- metalcor( studies_noid, median = median, noswitch = TRUE, useid = FALSE )
+        )
+        expect_equal( out2, out_noid )
+        
+        expect_silent(
+            out3 <- metalcor( studies2, median = median, noswitch = TRUE, useid = TRUE )
+        )
+        validate_metalcor( out3, S )
+        out3_noid <- out3
+        out3_noid$assoc$id <- NULL
+        expect_silent(
+            out2 <- metalcor( studies2, median = median, noswitch = TRUE, useid = FALSE )
+        )
+        expect_equal( out2, out3_noid )
+        expect_silent(
+            out2 <- metalcor( studies2_noid, median = median, noswitch = TRUE, useid = FALSE )
+        )
+        expect_equal( out2, out3_noid )
     }
 })
 

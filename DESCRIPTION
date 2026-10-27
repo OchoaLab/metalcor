@@ -1,6 +1,6 @@
 Package: metalcor
 Title: Meta-Analysis of Correlated Genetic Association Studies
-Version: 1.0.3
+Version: 1.0.4
 Authors@R: c(
     person(given = "Alejandro",
 	   family = "Ochoa",
@@ -24,6 +24,7 @@ Suggests:
 Imports:
     stats,
     dplyr,
+    rlang,
     tibble,
     tidyselect
 Config/testthat/edition: 3
