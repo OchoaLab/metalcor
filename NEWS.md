@@ -29,3 +29,7 @@
 # metalcor 1.0.4 (2026-10-27)
 
 - Function `metalcor` now does not require SNP `id` in input studies, but this column can be used to match variants with new option `useid = TRUE`.  Furthermore, ref/alt switching can now be turned off by setting the new option `noswitch = TRUE`.
+
+# metalcor 1.0.5 (2026-10-27)
+
+- Function `metalcor` fixed bug that outputs were not actually sorted.
